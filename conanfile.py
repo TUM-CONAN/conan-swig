@@ -29,23 +29,23 @@ class SwigConan(ConanFile):
             os.rename(source_file, "source")
         else:
             from conans import AutoToolsBuildEnvironment
-            env_build = AutoToolsBuildEnvironment()
-            env_build.configure()
-            env_build.make()
+            env_build = AutoToolsBuildEnvironment(self)
+            
+            with tools.environment_append(env_build.vars):
+                self.run("cd source && sh autogen.sh")
+                self.run("cd source && ./configure --prefix=%s/install" % self.install_folder)
+                self.run("cd source && make && make install")
 
 
     def package(self):
-        self.copy("*.h", dst="include", src="hello")
-        self.copy("*hello.lib", dst="lib", keep_path=False)
-        self.copy("*.dll", dst="bin", keep_path=False)
-        self.copy("*.so", dst="lib", keep_path=False)
-        self.copy("*.dylib", dst="lib", keep_path=False)
-        self.copy("*.a", dst="lib", keep_path=False)
+        self.copy("*", dst="bin", src="install/bin")
+        self.copy("*", dst="share", src="install/share")
 
     def package_info(self):
         swig_home = os.path.join(self.package_folder)
         self.output.info("Creating SWIG_HOME environment variable with : {0}".format(swig_home))
         self.env_info.SWIG_HOME = swig_home
 
-        self.output.info("Appending PATH environment variable with : {0}".format(swig_home))
-        self.env_info.path.append(swig_home)
+        bin_path = os.path.join(swig_home, "bin")
+        self.output.info("Appending PATH environment variable with : {0}".format(bin_path))
+        self.env_info.path.append(bin_path)
